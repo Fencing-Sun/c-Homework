@@ -168,7 +168,46 @@ void CImg::ReadFileImg(const string& filepath)
 		delete[]p2us_tmp[i];
 	delete[]p2us_tmp;
 
-};
+}
+void CImg::ShowImg()
+{
+	//计算灰度值
+	double d_DNmax = pC_Points[0].pd_ValuePixel[0];
+	double d_DNmin = pC_Points[0].pd_ValuePixel[0];
+	for (int i = 0;i < i_Lines * i_Samples;i++)
+		for (int j = 0;j < i_NumBands;j++)
+		{
+			if (d_DNmax < pC_Points[i].pd_ValuePixel[j])
+				d_DNmax = pC_Points[i].pd_ValuePixel[j];
+			if (d_DNmin > pC_Points[i].pd_ValuePixel[j])
+				d_DNmin = pC_Points[i].pd_ValuePixel[j];
+		};
+	//将DN值转化为灰度值
+	/*for (int i = 0;i < i_Lines * i_Samples;i++)
+		{
+			pC_Points[i].pd_ValuePixel[0] = int((pC_Points[i].pd_ValuePixel[0] - d_DNmin) / (d_DNmax - d_DNmin) * 255);
+		};*/
+	Type ** tmp;
+	tmp = new Type * [i_Lines];
+	for (int i = 0;i < i_Lines;i++)
+	{
+		tmp[i] = new Type[ i_Samples];
+	};
+	for (int j = 0;j < i_Lines;j++)
+		for (int k = 0;k < i_Samples;k++)
+			//tmp[j][k]=pC_Points[j * i_Samples + k].pd_ValuePixel[2] ;
+			tmp[j][k] = int((pC_Points[j * i_Samples + k].pd_ValuePixel[0] - d_DNmin) / (d_DNmax - d_DNmin) * 255);
+	Mat Img(i_Lines, i_Samples, CV_8UC1);
+	for (int i = 0; i < Img.rows; ++i)
+		for (int j = 0; j < Img.cols; ++j)
+			Img.at<uchar>(i, j) = tmp[i][j];
+	//namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
+	imshow("Display window", Img); // Show our image inside it.
+
+	waitKey(0); // Wait for a keystroke in the window*/
+	
+}
+;
 
 	
 void n_ROI::ReadFile(const string& filepath)
@@ -310,12 +349,6 @@ void n_ROI::PrintResult(const string & ResultPath)
 	cout <<"Succeeded!!!" << endl;
 }
 
-/*Cfenlei::~Cfenlei()
-{
-	for (int i = 0;i < i_Bands;i++)
-		delete [] ClassPixelValue[i];
-	delete[] ClassPixelValue;
-}*/
 
 void Cfenlei::ReadFileHDR_fl(const string& filepath)
 {
@@ -445,7 +478,7 @@ ConductMMD::~ConductMMD()
 void ConductMMD::fenlei(n_ROI objRoi)
 {
 	int NumROI = objRoi.NumROI;
-	NumClassification = NumROI + 1;
+	NumClassification = NumROI + 1;//多一类unclassification
 	int NumImgBand = objRoi.MutilRoi[0].NumImgBand;
 	double ** distance;
 	distance = new double * [NumROI];
@@ -463,14 +496,16 @@ void ConductMMD::fenlei(n_ROI objRoi)
 	{
 		ClassPixelCode[i] = 1000;//ClassPixelCode赋初值
 	};
-	for (int i = 0;i < NumROI;i++)
-	{
-		for (int j = 0;j < i_Lines * i_Samples;j++)
+	for (int j = 0;j < i_Lines * i_Samples;j++)
+	{ 
+		for (int i = 0;i < NumROI;i++)
 		{
 			for (int k = 0;k < NumImgBand;k++)
 			{
+				//distance[i][j] += pow((pC_Points[j].pd_ValuePixel[k] - objRoi.ClusterCenter[i][k]),2);
 				distance[i][j] += fabs(pC_Points[j].pd_ValuePixel[k] - objRoi.ClusterCenter[i][k]);//计算每个像素点到每个ROI聚类中心的距离
 			}
+			//distance[i][j] = sqrt(distance[i][j]);
 
 		}
 	};
@@ -478,13 +513,15 @@ void ConductMMD::fenlei(n_ROI objRoi)
 	for (int i = 0;i < i_Lines * i_Samples;i++)
 	{
 		tmp_distance = distance[0][i];//初始距离赋值为距离第一类的距离
+		//tmp_distance = 99999999999999;
 		ClassPixelCode[i] = 1;//暂时分为第一类
 		for (int j = 0;j < NumROI;j++)
 		{
-			if (distance[j][i] < tmp_distance)
+			if (distance[j][i] <=tmp_distance)
 			{
 				tmp_distance = distance[j][i];
-				ClassPixelCode[i] = j + 1;//更新类别值
+				//ClassPixelCode[i] = j + 1;//更新类别值
+				ClassPixelCode[i] = objRoi.MutilRoi[j].Code;
 			}
 
 
@@ -496,6 +533,11 @@ void ConductMMD::fenlei(n_ROI objRoi)
 			cout << endl;
 		cout << ClassCode[i] << " ";
 	}*/
+	for (int i = 0;i < i_Lines * i_Samples;i++)
+	{
+		if (ClassPixelCode[i] == 0)
+			cout << i << endl;
+	}
 	for (int i = 0;i < NumROI;i++)//释放distance所占的内存
 		delete[]distance[i];
 	delete[]distance;
@@ -555,8 +597,9 @@ void ConductMMD::WriteHDR(const string& Filename, n_ROI objRoi)
 
 void ConductMMD::PresionEvaluation(Cfenlei SVMclassfication)
 {
-	double NumTotal=0;//样本总数
-	double NumCorClassfication=0;//正确分类数
+	double NumTotal;//样本总数
+	double NumCorClassfication;//正确分类数
+	NumCorClassfication = 0;
 	double Pe;
 	NumTotal = i_Samples * i_Lines;
 	int* NumMMDEveryClass;//MMD分类中各类别数目
@@ -577,9 +620,12 @@ void ConductMMD::PresionEvaluation(Cfenlei SVMclassfication)
 	for (int j = 0;j < i_Lines * i_Samples;j++)
 	{
 		if (ReferenceImg[j] == ClassPixelCode[j])
-			NumCorClassfication++;
+			NumCorClassfication+=1;
 	}
+	cout << NumTotal << endl;
+	cout << NumCorClassfication << endl;
 	P0 = NumCorClassfication / NumTotal;
+	cout << NumCorClassfication / NumTotal << endl;
 	for (int i = 0;i < i_Lines * i_Samples;i++)//计算MMD分类法中各个类别的总数
 		for (int j = 0;j < NumClassification;j++)
 		{
@@ -600,6 +646,7 @@ void ConductMMD::PresionEvaluation(Cfenlei SVMclassfication)
 	for (int j = 0;j < NumClassification;j++)
 		tmp += NumCorEveryClass[j] * NumMMDEveryClass[j];
 	Pe = tmp / (NumTotal * NumTotal);//计算Pe
+	cout << Pe;
 	Kappa = (P0 - Pe) / (1 - Pe);//Kappa=(P0-Pe)/(1-Pe)
 	cout << "计算得总体分类精度为：" << P0 << endl;
 	cout << "计算得Kappa系数为：" << Kappa << endl;

@@ -17,7 +17,11 @@ int main()
     string w_fenlei = "C:\\Users\\sun-PC\\Desktop\\w_fenlei_4";
     string MMDfenlei = "C:\\Users\\sun-PC\\Desktop\\MMDfenlei";
     string MMDfenleiHDR = "C:\\Users\\sun-PC\\Desktop\\MMDfenlei";
-    n_ROI ObjRoi;
+    CImg ObjImg;
+    ObjImg.ReadFileHDR(HDRPath);
+    ObjImg.ReadFileImg(ImgPath);
+    ObjImg.ShowImg();
+   /* n_ROI ObjRoi;
     Cfenlei ObjFL;
     ConductMMD ObjCM;
     ObjFL.ReadFileHDR(HDRPath);
@@ -34,7 +38,7 @@ int main()
     ObjCM.WriteHDR(MMDfenleiHDR, ObjRoi);
     ObjCM.PresionEvaluation(ObjFL);
     //ObjRoi.GetRoiMean();
-   // ObjRoi.PrintResult(ResultPath);
+   // ObjRoi.PrintResult(ResultPath);*/
 
 }
 

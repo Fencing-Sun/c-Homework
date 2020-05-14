@@ -4,8 +4,13 @@
 #include<vector>
 #include<string>
 #include<time.h>
-using namespace std;
+#include <math.h>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/imgcodecs.hpp>
 
+using namespace cv;
+using namespace std;
 typedef unsigned short Type;
 
 //template<class T>
@@ -41,6 +46,7 @@ public:
 	CPoint* pC_Points;
 	void ReadFileHDR(const string& filepath);
 	void ReadFileImg(const string& filepath);
+	void ShowImg();
 };
 
 class Cfenlei: public CImg
